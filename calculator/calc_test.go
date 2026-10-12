@@ -36,3 +36,24 @@ func TestApply(t *testing.T) {
 		})
 	}
 }
+
+func TestParsing(t *testing.T) {
+	tests := []struct {
+		name    string
+		args    []string
+		wantErr bool
+	}{
+		{"valid", []string{"+", "2", "3"}, false},
+		{"invalid left", []string{"+", "sds", "3"}, true},
+		{"invalid right", []string{"+", "2", "abc"}, true},
+		{"empty", []string{}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, _, _, err := ParseOperands(tt.args)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ParseOperands() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}

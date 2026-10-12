@@ -23,18 +23,23 @@ func Divide(left, right float64) float64 {
 	return left / right
 }
 
-func Convert(args []string) (float64, float64, error) {
+func ParseOperands(args []string) (string, float64, float64, error) {
 	var leftOperand, rightOperand float64
 	var err error
-	leftOperand, err = strconv.ParseFloat(args[0], 64)
-	if err != nil {
-		return 0, 0, err
+	if len(args) != 3 {
+		err = errors.New("Usage: ./main <operation> <operand1> <operand2>")
+		return "", 0, 0, err
 	}
-	rightOperand, err = strconv.ParseFloat(args[1], 64)
+	operation := args[0]
+	leftOperand, err = strconv.ParseFloat(args[1], 64)
 	if err != nil {
-		return 0, 0, err
+		return "", 0, 0, err
 	}
-	return leftOperand, rightOperand, nil
+	rightOperand, err = strconv.ParseFloat(args[2], 64)
+	if err != nil {
+		return "", 0, 0, err
+	}
+	return operation, leftOperand, rightOperand, nil
 
 }
 
@@ -59,18 +64,16 @@ func MakeOperation(operation string, l, r float64) (float64, error) {
 
 func main() {
 	if len(os.Args) != 4 {
-		fmt.Println("Incorrect amount of params!")
+		fmt.Fprintln(os.Stderr, "Usage: ./main <operation> <operand1> <operand2>")
 		os.Exit(1)
 	}
-	operation := os.Args[1]
-	var leftOperand, rightOperand, res float64
-	var err error
-	leftOperand, rightOperand, err = Convert(os.Args[2:4])
+
+	operation, leftOperand, rightOperand, err := ParseOperands(os.Args[1:])
 	if err != nil {
 		fmt.Println("Incorrect input data. Err:", err)
 		os.Exit(1)
 	}
-	res, err = MakeOperation(operation, leftOperand, rightOperand)
+	res, err := MakeOperation(operation, leftOperand, rightOperand)
 	if err != nil {
 		fmt.Println("Error in process of calculating result, err = ", err)
 		os.Exit(1)
