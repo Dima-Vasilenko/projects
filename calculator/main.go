@@ -53,12 +53,12 @@ func MakeOperation(operation string, l, r float64) (float64, error) {
 		return Multiply(l, r), nil
 	case "/":
 		if r == 0 {
-			err := errors.New("Zero division!")
+			err := errors.New("zero division")
 			return 0, err
 		}
 		return Divide(l, r), nil
 	}
-	err := errors.New("Unknown operation!")
+	err := errors.New("unknown operation")
 	return 0, err
 }
 
