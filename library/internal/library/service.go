@@ -10,8 +10,8 @@ import (
 type Repository interface {
 	AddBook(b book.Book)
 	DeleteBookByIndex(index int)
-	GetBookById(id int) (book.Book, bool)
-	GetListOfBooks() []book.Book
+	GetBookById(id int) (*book.Book, bool)
+	GetListOfBooks() []*book.Book
 }
 
 type User struct {
@@ -20,21 +20,21 @@ type User struct {
 }
 
 type LibrarySystem struct {
-	Users   []User
+	Users   []*User
 	Current int
-	catalog Repository
+	Catalog Repository
 }
 
 func (l *LibrarySystem) RegisterUser(us string) error {
-	exists := slices.ContainsFunc(l.Users, func(u User) bool {
+	exists := slices.ContainsFunc(l.Users, func(u *User) bool {
 		return u.Username == us
 	})
 	if exists {
 		return errors.New("user with such username has been added eirleir, try something another")
 	}
-	// repo := book.NewMemory()
-	books := make([]int, 1)
-	l.Users = append(l.Users, User{"us", books})
+
+	books := make([]int, 0)
+	l.Users = append(l.Users, &User{us, books})
 	l.Current = len(l.Users) - 1
 	return nil
 }
@@ -44,7 +44,7 @@ func (l *LibrarySystem) LogOut() {
 }
 
 func (l *LibrarySystem) LogIn(us string) error {
-	index := slices.IndexFunc(l.Users, func(u User) bool {
+	index := slices.IndexFunc(l.Users, func(u *User) bool {
 		return u.Username == us
 	})
 	if index == -1 {
@@ -54,8 +54,14 @@ func (l *LibrarySystem) LogIn(us string) error {
 	return nil
 }
 
+func (l *LibrarySystem) ShowListOfUsers() {
+	for i, val := range l.Users {
+		fmt.Printf("User %d: %s\n", i, val.Username)
+	}
+}
+
 func (l *LibrarySystem) ShowBooks() {
-	for _, v := range l.catalog.GetListOfBooks() {
+	for _, v := range l.Catalog.GetListOfBooks() {
 		fmt.Println(v)
 	}
 }
@@ -65,7 +71,7 @@ func (l *LibrarySystem) GetBookToClient(id int) error {
 		return errors.New("unathorised getting books")
 	}
 
-	b, ok := l.catalog.GetBookById(id)
+	b, ok := l.Catalog.GetBookById(id)
 	if ok != true {
 		return errors.New("not such book in lib with this id")
 	}
@@ -84,7 +90,7 @@ func (l *LibrarySystem) ReturnBookFromClient(id int) error {
 		return errors.New("unathorised returning books")
 	}
 
-	b, ok := l.catalog.GetBookById(id)
+	b, ok := l.Catalog.GetBookById(id)
 	if ok != true {
 		return errors.New("not such book in lib with this id")
 	}
@@ -108,22 +114,26 @@ func (l *LibrarySystem) ShowClientsBooks() error {
 		return errors.New("unathorised getting books")
 	}
 	for _, v := range l.Users[l.Current].books {
-		b, _ := l.catalog.GetBookById(v)
+		fmt.Println("Book's id to show: ", v)
+		b, _ := l.Catalog.GetBookById(v)
 		fmt.Println(b)
 	}
 	return nil
 }
 
 func (l *LibrarySystem) AddBookToCatalog(b book.Book) {
-	l.catalog.AddBook(b)
+	l.Catalog.AddBook(b)
 }
 
 func (l *LibrarySystem) DeleteBookFromCatalog(id int) error {
-	b, ok := l.catalog.GetBookById(id)
+	b, ok := l.Catalog.GetBookById(id)
 	if !ok {
 		return errors.New("no such book in catalog")
 	}
-	index := slices.Index(l.catalog.GetListOfBooks(), b)
-	l.catalog.DeleteBookByIndex(index)
+	if b.WasTaken {
+		return errors.New("cannot delete book that has tooked by user")
+	}
+	index := slices.Index(l.Catalog.GetListOfBooks(), b)
+	l.Catalog.DeleteBookByIndex(index)
 	return nil
 }

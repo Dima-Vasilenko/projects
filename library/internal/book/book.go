@@ -19,7 +19,7 @@ type Book struct {
 }
 
 func (b *Book) String() string {
-	return fmt.Sprintf("%v, %vpages. %v; ID: %v", b.Title, b.Pages, b.LastName, b.Id)
+	return fmt.Sprintf("Title: %v, %v pages. Author: %v; ID: %v, Tooked: %v", b.Title, b.Pages, b.LastName, b.Id, b.WasTaken)
 }
 
 func (b *Book) HasTaken() bool {
