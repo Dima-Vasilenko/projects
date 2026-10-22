@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"library/internal/book"
 	"library/internal/library"
+	"library/internal/user"
 )
 
 func GetInt(mess string) (res int) {
@@ -18,12 +19,16 @@ func GetString(mess string) (res string) {
 	return
 }
 
-type Library struct {
-	system   library.LibrarySystem
-	loggedIn bool
+type Session struct {
+	clientId int
 }
 
-var booksId int = 0
+type Library struct {
+	session    Session
+	catService library.CatalogService
+	usService  library.UserService
+	lenService library.LendingService
+}
 
 func (l *Library) AddBook() {
 	title := GetString("Enter book's title:")
@@ -32,39 +37,34 @@ func (l *Library) AddBook() {
 	authorFirst := GetString("Enter book's author firstname:")
 	pages := GetInt("Enter book's amount of pages:")
 
-	var book book.Book = book.Book{
-		Title:       title,
-		Description: descr,
-		Pages:       pages,
-		Id:          booksId,
-		WasTaken:    false,
-		Author: book.Author{
-			LastName:  authorLast,
-			FirstName: authorFirst,
-		},
-	}
-	l.system.AddBookToCatalog(book)
-	booksId++
+	book := book.NewBook(title, descr, authorLast, authorFirst, pages)
+	l.catService.AddBookToCatalog(&book)
 }
 
 func (l *Library) DeleteBook() {
 	id := GetInt("Enter book's id, that you want to delete:")
-	err := l.system.DeleteBookFromCatalog(id)
+	if lended := l.lenService.IsLended(id); lended {
+		fmt.Println("you can't delte book from catalog while it lending for someone")
+		return
+	}
+	err := l.catService.DeleteBookFromCatalog(id)
 	if err != nil {
 		fmt.Println(err)
 	}
 }
 
 func (l *Library) ShowBooks() {
-	l.system.ShowBooks()
+	l.catService.ShowBooks()
 }
 
 func (l *Library) RegisterClient() {
 	for true {
+		var err error
 		us := GetString("Enter you username:")
-		err := l.system.RegisterUser(us)
+		l.session.clientId, err = l.usService.RegisterUser(us)
 		if err == nil {
 			fmt.Println("You have been succesfully registered")
+			fmt.Println("You user id: ", l.session.clientId)
 			break
 		}
 		fmt.Println(err)
@@ -72,8 +72,9 @@ func (l *Library) RegisterClient() {
 }
 
 func (l *Library) Login() bool {
+	var err error
 	us := GetString("Enter you username:")
-	err := l.system.LogIn(us)
+	l.session.clientId, err = l.usService.LogIn(us)
 	if err != nil {
 		fmt.Println(err)
 		return false
@@ -83,7 +84,7 @@ func (l *Library) Login() bool {
 
 func (l *Library) GetBookToClient() {
 	id := GetInt("Enter book's id that you want to take:")
-	err := l.system.GetBookToClient(id)
+	err := l.lenService.GetBookToClient(l.session.clientId, id)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -91,14 +92,14 @@ func (l *Library) GetBookToClient() {
 
 func (l *Library) ReturnBookFromClient() {
 	id := GetInt("Enter book's id that you want to return:")
-	err := l.system.ReturnBookFromClient(id)
+	err := l.lenService.ReturnBookFromClient(l.session.clientId, id)
 	if err != nil {
 		fmt.Println(err)
 	}
 }
 
 func (l *Library) ShowClientBooks() {
-	err := l.system.ShowClientsBooks()
+	err := l.lenService.ShowClientsBooks(l.session.clientId)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -132,7 +133,7 @@ func (l *Library) Start() {
 	fmt.Println("Welocome to our Library!")
 	for true {
 		var choice int
-		if !l.loggedIn {
+		if l.session.clientId == -1 {
 			choice = ShowMainMenu()
 		} else {
 			choice = ShowAuthMenu()
@@ -141,37 +142,32 @@ func (l *Library) Start() {
 		case 1:
 			l.ShowBooks()
 		case 2:
-			if !l.loggedIn {
+			if l.session.clientId == -1 {
 				l.AddBook()
 				continue
 			}
 			l.GetBookToClient()
 		case 3:
-			if !l.loggedIn {
+			if l.session.clientId == -1 {
 				l.DeleteBook()
 				continue
 			}
 			l.ReturnBookFromClient()
 		case 4:
-			if !l.loggedIn {
+			if l.session.clientId == -1 {
 				l.RegisterClient()
-				l.loggedIn = true
 				continue
 			}
 			l.ShowClientBooks()
 		case 5:
-			if !l.loggedIn {
-				ok := l.Login()
-				if ok {
-					l.loggedIn = true
-				}
+			if l.session.clientId == -1 {
+				l.Login()
 				continue
 			}
-			l.system.LogOut()
-			l.loggedIn = false
+			l.session.clientId = -1
 		case 6:
-			l.system.ShowListOfUsers()
-			if l.loggedIn {
+			l.usService.ShowListOfUsers()
+			if l.session.clientId != -1 {
 				fmt.Println("uncknown command")
 			}
 		case 0:
@@ -183,14 +179,21 @@ func (l *Library) Start() {
 }
 
 func main() {
-	lib := Library{
-		system: library.LibrarySystem{
-			Users:   make([]*library.User, 0),
-			Current: -1,
-			Catalog: book.NewMemory(),
-		},
-		loggedIn: false,
-	}
 
+	ses := Session{clientId: -1}
+
+	usMem := user.NewUserMemory()
+	bookMem := book.NewMemory()
+
+	catServ := library.NewCatalogService(bookMem)
+	usServ := library.NewUserService(usMem)
+	lenServ := library.NewLendingService(usMem, bookMem)
+
+	lib := Library{
+		session:    ses,
+		catService: catServ,
+		usService:  usServ,
+		lenService: lenServ,
+	}
 	lib.Start()
 }
