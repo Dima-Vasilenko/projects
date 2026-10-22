@@ -17,8 +17,8 @@ type UserService struct {
 	usRepo UserRepository
 }
 
-func NewUserService(usMem *user.UserMemory) UserService {
-	return UserService{
+func NewUserService(usMem UserRepository) *UserService {
+	return &UserService{
 		usRepo: usMem,
 	}
 }
@@ -31,11 +31,12 @@ func (u *UserService) RegisterUser(us string) (int, error) {
 		return u.Username == us
 	})
 	if exists {
-		return -1, errors.New("user with such username has been added eirleir, try something another")
+		return -1, ErrRepeatingUsername
 	}
 
-	u.usRepo.AddUser(user.NewUser(us))
-	return len(u.usRepo.GetListOfUsers()) - 1, nil
+	uAdd := user.NewUser(us)
+	u.usRepo.AddUser(uAdd)
+	return uAdd.ID, nil
 }
 
 func (u *UserService) LogIn(us string) (int, error) {
@@ -43,9 +44,9 @@ func (u *UserService) LogIn(us string) (int, error) {
 		return u.Username == us
 	})
 	if index == -1 {
-		return -1, errors.New("no such user has been registed")
+		return -1, ErrUncknownUser
 	}
-	return index, nil
+	return u.usRepo.GetListOfUsers()[index].ID, nil
 }
 
 func (u *UserService) ShowListOfUsers() {

@@ -6,16 +6,20 @@ import (
 )
 
 type Memory struct {
-	books []*Book
+	books  []*Book
+	nextID int
 }
 
 func NewMemory() *Memory {
-	return new(Memory{
-		books: make([]*Book, 0),
+	return &(Memory{
+		books:  make([]*Book, 0),
+		nextID: 0,
 	})
 }
 
 func (m *Memory) AddBook(b *Book) {
+	b.ID = m.nextID
+	m.nextID++
 	m.books = append(m.books, b)
 }
 
@@ -29,7 +33,7 @@ func (m *Memory) DeleteBookByIndex(index int) {
 
 func (m *Memory) DeleteBookById(id int) error {
 	index := slices.IndexFunc(m.books, func(b *Book) bool {
-		return b.Id == id
+		return b.ID == id
 	})
 
 	if index == -1 {
@@ -42,7 +46,7 @@ func (m *Memory) DeleteBookById(id int) error {
 
 func (m *Memory) GetBookById(id int) (*Book, bool) {
 	for _, val := range m.books {
-		if val.Id == id {
+		if val.ID == id {
 			return val, true
 		}
 	}

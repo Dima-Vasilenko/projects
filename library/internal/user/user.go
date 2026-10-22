@@ -6,9 +6,9 @@ import (
 
 type User struct {
 	Username string
-	Id       int
+	ID       int
 }
 
 func (u *User) String() string {
-	return fmt.Sprintf("User: %s\n", u.Username)
+	return fmt.Sprintf("User: %s", u.Username)
 }

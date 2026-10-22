@@ -3,6 +3,7 @@ package library
 import (
 	"fmt"
 	"library/internal/book"
+	"slices"
 )
 
 type BookRepository interface {
@@ -10,16 +11,15 @@ type BookRepository interface {
 	DeleteBookByIndex(index int)
 	GetBookById(id int) (*book.Book, bool)
 	GetListOfBooks() []*book.Book
-	DeleteBookById(id int) error
 }
 
 type CatalogService struct {
 	bookRepo BookRepository
 }
 
-func NewCatalogService(bookMem *book.Memory) CatalogService {
-	return CatalogService{
-		bookRepo: bookMem,
+func NewCatalogService(repo BookRepository) *CatalogService {
+	return &CatalogService{
+		bookRepo: repo,
 	}
 }
 
@@ -31,12 +31,19 @@ func (c *CatalogService) ShowBooks() {
 
 func (c *CatalogService) AddBookToCatalog(b *book.Book) int {
 	c.bookRepo.AddBook(b)
-	return b.Id
+	return b.ID
 }
 
 func (c *CatalogService) DeleteBookFromCatalog(id int) error {
-	result := c.bookRepo.DeleteBookById(id)
-	return result
+	index := slices.IndexFunc(c.bookRepo.GetListOfBooks(), func(b *book.Book) bool {
+		return b.ID == id
+	})
+
+	if index == -1 {
+		return ErrUncknownBook
+	}
+	c.bookRepo.DeleteBookByIndex(index)
+	return nil
 }
 
 func (c *CatalogService) AmountOfBooks() int {

@@ -1,7 +1,6 @@
 package library_test
 
 import (
-	"fmt"
 	"library/internal/book"
 	"library/internal/library"
 	"library/internal/user"
@@ -37,11 +36,10 @@ func TestDeleteBookFromCatalog(t *testing.T) {
 	bServ.AddBookToCatalog(&b2)
 
 	err := bServ.DeleteBookFromCatalog(bId)
-	fmt.Println("Err in deliting:", err)
 	assert.Nil(t, err)
 }
 
-func TestDeleteBookFromCatalog2(t *testing.T) {
+func TestDeleteBookFromCatalog_NotFound(t *testing.T) {
 	var (
 		b1    = book.NewBook("A", "A", "A", "A", 10)
 		bMem  = book.NewMemory()
@@ -92,7 +90,7 @@ func TestGetBookToClient(t *testing.T) {
 		uServ = library.NewUserService(uMem)
 		bMem  = book.NewMemory()
 		bServ = library.NewCatalogService(bMem)
-		lServ = library.NewLendingService(uMem, bMem)
+		lServ = library.NewLendingService(bMem)
 	)
 
 	bId := bServ.AddBookToCatalog(&b1)
@@ -108,7 +106,7 @@ func TestReturnBookFromClient(t *testing.T) {
 		uServ = library.NewUserService(uMem)
 		bMem  = book.NewMemory()
 		bServ = library.NewCatalogService(bMem)
-		lServ = library.NewLendingService(uMem, bMem)
+		lServ = library.NewLendingService(bMem)
 	)
 
 	bId := bServ.AddBookToCatalog(&b1)
@@ -126,7 +124,7 @@ func TestShowClientsBooks(t *testing.T) {
 		uServ = library.NewUserService(uMem)
 		bMem  = book.NewMemory()
 		bServ = library.NewCatalogService(bMem)
-		lServ = library.NewLendingService(uMem, bMem)
+		lServ = library.NewLendingService(bMem)
 	)
 
 	bServ.AddBookToCatalog(&b1)
@@ -144,7 +142,7 @@ func TestIsLended(t *testing.T) {
 		uServ = library.NewUserService(uMem)
 		bMem  = book.NewMemory()
 		bServ = library.NewCatalogService(bMem)
-		lServ = library.NewLendingService(uMem, bMem)
+		lServ = library.NewLendingService(bMem)
 	)
 
 	bId := bServ.AddBookToCatalog(&b1)
@@ -153,4 +151,39 @@ func TestIsLended(t *testing.T) {
 
 	is := lServ.IsLended(bId)
 	assert.True(t, is)
+}
+
+func TestReturningByIncorrectClient(t *testing.T) {
+	var (
+		b1    = book.NewBook("A", "A", "A", "A", 10)
+		uMem  = user.NewUserMemory()
+		uServ = library.NewUserService(uMem)
+		bMem  = book.NewMemory()
+		bServ = library.NewCatalogService(bMem)
+		lServ = library.NewLendingService(bMem)
+	)
+
+	bServ.AddBookToCatalog(&b1)
+	uServ.RegisterUser("f")
+	uServ.RegisterUser("f2")
+	lServ.GetBookToClient(0, 0)
+	err := lServ.ReturnBookFromClient(1, 0)
+
+	assert.ErrorIs(t, err, library.ErrIncorrectUserAction)
+}
+func TestReturnBookThatNotLended(t *testing.T) {
+	var (
+		b1    = book.NewBook("A", "A", "A", "A", 10)
+		uMem  = user.NewUserMemory()
+		uServ = library.NewUserService(uMem)
+		bMem  = book.NewMemory()
+		bServ = library.NewCatalogService(bMem)
+		lServ = library.NewLendingService(bMem)
+	)
+
+	bServ.AddBookToCatalog(&b1)
+	uServ.RegisterUser("f")
+	err := lServ.ReturnBookFromClient(0, 0)
+
+	assert.ErrorIs(t, err, library.ErrFreeBook)
 }

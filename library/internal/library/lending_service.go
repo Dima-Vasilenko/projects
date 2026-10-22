@@ -1,10 +1,7 @@
 package library
 
 import (
-	"errors"
 	"fmt"
-	"library/internal/book"
-	"library/internal/user"
 	"slices"
 )
 
@@ -14,14 +11,12 @@ type Loan struct {
 }
 
 type LendingService struct {
-	usRepo   UserRepository
 	bookRepo BookRepository
 	loan     []*Loan
 }
 
-func NewLendingService(usMem *user.UserMemory, bookMem *book.Memory) LendingService {
-	return LendingService{
-		usRepo:   usMem,
+func NewLendingService(bookMem BookRepository) *LendingService {
+	return &LendingService{
 		bookRepo: bookMem,
 		loan:     make([]*Loan, 0),
 	}
@@ -29,18 +24,18 @@ func NewLendingService(usMem *user.UserMemory, bookMem *book.Memory) LendingServ
 
 func (l *LendingService) GetBookToClient(clientId, id int) error {
 	if clientId == -1 {
-		return errors.New("unathorised getting books")
+		return ErrUserNotAuthorised
 	}
 
 	_, ok := l.bookRepo.GetBookById(id)
 	if ok != true {
-		return errors.New("not such book in lib with this id")
+		return ErrUncknownBook
 	}
 
 	if index := slices.IndexFunc(l.loan, func(l *Loan) bool {
 		return l.BookId == id
 	}); index != -1 {
-		return errors.New("this book has been toked by another client, choise something else")
+		return ErrTookedBook
 	}
 
 	l.loan = append(l.loan, &Loan{clientId, id})
@@ -49,19 +44,22 @@ func (l *LendingService) GetBookToClient(clientId, id int) error {
 
 func (l *LendingService) ReturnBookFromClient(clientId, id int) error {
 	if clientId == -1 {
-		return errors.New("unathorised returning books")
+		return ErrUserNotAuthorised
 	}
 
 	_, ok := l.bookRepo.GetBookById(id)
 	if ok != true {
-		return errors.New("not such book in lib with this id")
+		return ErrUncknownBook
 	}
 
 	index := slices.IndexFunc(l.loan, func(l *Loan) bool {
 		return l.BookId == id
 	})
 	if index == -1 {
-		return errors.New("this book hasn't been tooked for someone")
+		return ErrFreeBook
+	}
+	if l.loan[index].UserId != clientId {
+		return ErrIncorrectUserAction
 	}
 
 	l.loan = append(l.loan[:index], l.loan[index+1:]...)
@@ -70,7 +68,7 @@ func (l *LendingService) ReturnBookFromClient(clientId, id int) error {
 
 func (l *LendingService) ShowClientsBooks(clientId int) error {
 	if clientId == -1 {
-		return errors.New("unathorised getting books")
+		return ErrUserNotAuthorised
 	}
 	for _, v := range l.loan {
 		if v.UserId == clientId {

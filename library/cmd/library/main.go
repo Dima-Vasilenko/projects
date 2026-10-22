@@ -25,9 +25,9 @@ type Session struct {
 
 type Library struct {
 	session    Session
-	catService library.CatalogService
-	usService  library.UserService
-	lenService library.LendingService
+	catService *library.CatalogService
+	usService  *library.UserService
+	lenService *library.LendingService
 }
 
 func (l *Library) AddBook() {
@@ -37,8 +37,8 @@ func (l *Library) AddBook() {
 	authorFirst := GetString("Enter book's author firstname:")
 	pages := GetInt("Enter book's amount of pages:")
 
-	book := book.NewBook(title, descr, authorLast, authorFirst, pages)
-	l.catService.AddBookToCatalog(&book)
+	b := book.NewBook(title, descr, authorLast, authorFirst, pages)
+	l.catService.AddBookToCatalog(&b)
 }
 
 func (l *Library) DeleteBook() {
@@ -58,7 +58,7 @@ func (l *Library) ShowBooks() {
 }
 
 func (l *Library) RegisterClient() {
-	for true {
+	for {
 		var err error
 		us := GetString("Enter you username:")
 		l.session.clientId, err = l.usService.RegisterUser(us)
@@ -131,7 +131,7 @@ func ShowAuthMenu() (choice int) {
 
 func (l *Library) Start() {
 	fmt.Println("Welocome to our Library!")
-	for true {
+	for {
 		var choice int
 		if l.session.clientId == -1 {
 			choice = ShowMainMenu()
@@ -166,10 +166,11 @@ func (l *Library) Start() {
 			}
 			l.session.clientId = -1
 		case 6:
-			l.usService.ShowListOfUsers()
 			if l.session.clientId != -1 {
 				fmt.Println("uncknown command")
+				continue
 			}
+			l.usService.ShowListOfUsers()
 		case 0:
 			return
 		default:
@@ -187,7 +188,7 @@ func main() {
 
 	catServ := library.NewCatalogService(bookMem)
 	usServ := library.NewUserService(usMem)
-	lenServ := library.NewLendingService(usMem, bookMem)
+	lenServ := library.NewLendingService(bookMem)
 
 	lib := Library{
 		session:    ses,
