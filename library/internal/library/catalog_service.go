@@ -29,11 +29,16 @@ func (c *CatalogService) ShowBooks() {
 	}
 }
 
-func (c *CatalogService) AddBookToCatalog(b *book.Book) {
+func (c *CatalogService) AddBookToCatalog(b *book.Book) int {
 	c.bookRepo.AddBook(b)
+	return b.Id
 }
 
 func (c *CatalogService) DeleteBookFromCatalog(id int) error {
 	result := c.bookRepo.DeleteBookById(id)
 	return result
+}
+
+func (c *CatalogService) AmountOfBooks() int {
+	return len(c.bookRepo.GetListOfBooks())
 }
