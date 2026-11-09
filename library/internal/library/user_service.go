@@ -2,15 +2,19 @@ package library
 
 import (
 	"errors"
-	"fmt"
+	"library/internal/errors_alias"
 	"library/internal/user"
 	"slices"
+	"strings"
+	"unicode"
 )
 
 type UserRepository interface {
-	AddUser(u *user.User)
+	AddUser(u *user.User) error
 	GetUserByUsername(us string) (*user.User, bool)
 	GetListOfUsers() []*user.User
+	IsExist(us string) bool
+	IsIDExist(id int) bool
 }
 
 type UserService struct {
@@ -24,14 +28,13 @@ func NewUserService(usMem UserRepository) *UserService {
 }
 
 func (u *UserService) RegisterUser(us string) (int, error) {
+	us = strings.TrimLeftFunc(us, unicode.IsSpace)
 	if us == "" {
 		return -1, errors.New("incorrect input")
 	}
-	exists := slices.ContainsFunc(u.usRepo.GetListOfUsers(), func(u *user.User) bool {
-		return u.Username == us
-	})
-	if exists {
-		return -1, ErrRepeatingUsername
+
+	if exists := u.usRepo.IsExist(us); exists {
+		return -1, errors_alias.ErrRepeatingUsername
 	}
 
 	uAdd := user.NewUser(us)
@@ -44,13 +47,11 @@ func (u *UserService) LogIn(us string) (int, error) {
 		return u.Username == us
 	})
 	if index == -1 {
-		return -1, ErrUncknownUser
+		return -1, errors_alias.ErrUncknownUser
 	}
 	return u.usRepo.GetListOfUsers()[index].ID, nil
 }
 
-func (u *UserService) ShowListOfUsers() {
-	for _, val := range u.usRepo.GetListOfUsers() {
-		fmt.Println(val)
-	}
+func (u *UserService) GetListOfUsers() []*user.User {
+	return u.usRepo.GetListOfUsers()
 }

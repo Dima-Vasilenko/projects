@@ -1,10 +1,14 @@
 package user
 
+import (
+	"library/internal/errors_alias"
+	"slices"
+)
+
 func NewUser(us string) *User {
-	user := &(User{
+	return &(User{
 		Username: us,
 	})
-	return user
 }
 
 type UserMemory struct {
@@ -19,10 +23,14 @@ func NewUserMemory() *UserMemory {
 	})
 }
 
-func (um *UserMemory) AddUser(u *User) {
+func (um *UserMemory) AddUser(u *User) error {
+	if u == nil {
+		return errors_alias.ErrUncknownUser
+	}
 	u.ID = um.nextID
 	um.nextID++
 	um.users = append(um.users, u)
+	return nil
 }
 
 func (um *UserMemory) GetUserByUsername(us string) (*User, bool) {
@@ -35,5 +43,19 @@ func (um *UserMemory) GetUserByUsername(us string) (*User, bool) {
 }
 
 func (um *UserMemory) GetListOfUsers() []*User {
-	return um.users
+	return append([]*User(nil), um.users...)
+}
+
+func (um *UserMemory) IsExist(us string) bool {
+	exist := slices.ContainsFunc(um.users, func(u *User) bool {
+		return u.Username == us
+	})
+	return exist
+}
+
+func (um *UserMemory) IsIDExist(id int) bool {
+	exist := slices.ContainsFunc(um.users, func(u *User) bool {
+		return u.ID == id
+	})
+	return exist
 }

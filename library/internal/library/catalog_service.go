@@ -1,49 +1,50 @@
 package library
 
 import (
-	"fmt"
 	"library/internal/book"
+	"library/internal/errors_alias"
 	"slices"
 )
 
 type BookRepository interface {
-	AddBook(b *book.Book)
-	DeleteBookByIndex(index int)
+	AddBook(b *book.Book) error
+	DeleteBookById(id int) error
 	GetBookById(id int) (*book.Book, bool)
 	GetListOfBooks() []*book.Book
 }
 
 type CatalogService struct {
-	bookRepo BookRepository
+	bookRepo    BookRepository
+	lendingServ *LendingService
 }
 
-func NewCatalogService(repo BookRepository) *CatalogService {
+func NewCatalogService(repo BookRepository, l *LendingService) *CatalogService {
 	return &CatalogService{
-		bookRepo: repo,
+		bookRepo:    repo,
+		lendingServ: l,
 	}
 }
 
-func (c *CatalogService) ShowBooks() {
-	for _, v := range c.bookRepo.GetListOfBooks() {
-		fmt.Println(v)
-	}
+func (c *CatalogService) GetBooks() []*book.Book {
+	return c.bookRepo.GetListOfBooks()
 }
 
-func (c *CatalogService) AddBookToCatalog(b *book.Book) int {
-	c.bookRepo.AddBook(b)
-	return b.ID
+func (c *CatalogService) AddBookToCatalog(b *book.Book) (int, error) {
+	err := c.bookRepo.AddBook(b)
+	if err != nil {
+		return -1, err
+	}
+	return b.ID, nil
 }
 
 func (c *CatalogService) DeleteBookFromCatalog(id int) error {
-	index := slices.IndexFunc(c.bookRepo.GetListOfBooks(), func(b *book.Book) bool {
-		return b.ID == id
-	})
-
-	if index == -1 {
-		return ErrUncknownBook
+	if exist := slices.ContainsFunc(c.lendingServ.GetLoan(), func(l *Loan) bool {
+		return id == l.BookId
+	}); exist {
+		return errors_alias.ErrTookedBook
 	}
-	c.bookRepo.DeleteBookByIndex(index)
-	return nil
+	res := c.bookRepo.DeleteBookById(id)
+	return res
 }
 
 func (c *CatalogService) AmountOfBooks() int {

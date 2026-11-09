@@ -1,4 +1,4 @@
-package library
+package errors_alias
 
 import "errors"
 

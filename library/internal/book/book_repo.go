@@ -2,6 +2,7 @@ package book
 
 import (
 	"errors"
+	"library/internal/errors_alias"
 	"slices"
 )
 
@@ -17,10 +18,14 @@ func NewMemory() *Memory {
 	})
 }
 
-func (m *Memory) AddBook(b *Book) {
+func (m *Memory) AddBook(b *Book) error {
+	if b == nil {
+		return errors_alias.ErrUncknownBook
+	}
 	b.ID = m.nextID
 	m.nextID++
 	m.books = append(m.books, b)
+	return nil
 }
 
 func (m *Memory) DeleteBookByIndex(index int) {
@@ -54,5 +59,5 @@ func (m *Memory) GetBookById(id int) (*Book, bool) {
 }
 
 func (m *Memory) GetListOfBooks() []*Book {
-	return m.books
+	return append([]*Book(nil), m.books...)
 }

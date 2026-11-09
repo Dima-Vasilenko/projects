@@ -54,7 +54,10 @@ func (l *Library) DeleteBook() {
 }
 
 func (l *Library) ShowBooks() {
-	l.catService.ShowBooks()
+	books := l.catService.GetBooks()
+	for v, _ := range books {
+		fmt.Println(v)
+	}
 }
 
 func (l *Library) RegisterClient() {
@@ -99,9 +102,12 @@ func (l *Library) ReturnBookFromClient() {
 }
 
 func (l *Library) ShowClientBooks() {
-	err := l.lenService.ShowClientsBooks(l.session.clientId)
+	books, err := l.lenService.GetClientsBooks(l.session.clientId)
 	if err != nil {
 		fmt.Println(err)
+	}
+	for v, _ := range books {
+		fmt.Println(v)
 	}
 }
 
@@ -170,7 +176,10 @@ func (l *Library) Start() {
 				fmt.Println("uncknown command")
 				continue
 			}
-			l.usService.ShowListOfUsers()
+			users := l.usService.GetListOfUsers()
+			for v, _ := range users {
+				fmt.Println(v)
+			}
 		case 0:
 			return
 		default:
@@ -186,9 +195,9 @@ func main() {
 	usMem := user.NewUserMemory()
 	bookMem := book.NewMemory()
 
-	catServ := library.NewCatalogService(bookMem)
 	usServ := library.NewUserService(usMem)
-	lenServ := library.NewLendingService(bookMem)
+	lenServ := library.NewLendingService(bookMem, usMem)
+	catServ := library.NewCatalogService(bookMem, lenServ)
 
 	lib := Library{
 		session:    ses,
