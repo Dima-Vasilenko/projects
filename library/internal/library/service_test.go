@@ -102,6 +102,17 @@ func TestRegisterUsedUsername(t *testing.T) {
 	assert.ErrorIs(t, err, errors_alias.ErrRepeatingUsername)
 }
 
+func TestRegisterSpacingUsername(t *testing.T) {
+	var (
+		// u1 = user.NewUser("f")
+		uMem  = user.NewUserMemory()
+		uServ = library.NewUserService(uMem)
+	)
+
+	_, err := uServ.RegisterUser("     ")
+	assert.ErrorIs(t, err, errors_alias.ErrIncorrectUserData)
+}
+
 func TestLoginUser(t *testing.T) {
 	var (
 		// u1 = user.NewUser("f")
@@ -133,6 +144,39 @@ func TestGetBookToClient(t *testing.T) {
 	i, _ := uServ.RegisterUser("f")
 	err := lServ.GetBookToClient(i, bId)
 	assert.Nil(t, err)
+}
+
+func TestGetBookToClientWithIncorrectID(t *testing.T) {
+	var (
+		b1    = book.NewBook("A", "A", "A", "A", 10)
+		uMem  = user.NewUserMemory()
+		uServ = library.NewUserService(uMem)
+		bMem  = book.NewMemory()
+		bServ = library.NewCatalogService(bMem, nil)
+		lServ = library.NewLendingService(bMem, uMem)
+	)
+
+	bServ.AddBookToCatalog(&b1)
+	bId2, _ := bServ.AddBookToCatalog(&b1)
+	i, _ := uServ.RegisterUser("f")
+	err := lServ.GetBookToClient(i, bId2)
+	assert.Nil(t, err)
+}
+
+func TestGetBookToNotExistingClient(t *testing.T) {
+	var (
+		b1    = book.NewBook("A", "A", "A", "A", 10)
+		uMem  = user.NewUserMemory()
+		uServ = library.NewUserService(uMem)
+		bMem  = book.NewMemory()
+		bServ = library.NewCatalogService(bMem, nil)
+		lServ = library.NewLendingService(bMem, uMem)
+	)
+
+	bId, _ := bServ.AddBookToCatalog(&b1)
+	uServ.RegisterUser("f")
+	err := lServ.GetBookToClient(3, bId)
+	assert.ErrorIs(t, err, errors_alias.ErrUserNotAuthorised)
 }
 
 func TestGetHandlingBookToClient(t *testing.T) {

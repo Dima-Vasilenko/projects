@@ -55,8 +55,8 @@ func (l *Library) DeleteBook() {
 
 func (l *Library) ShowBooks() {
 	books := l.catService.GetBooks()
-	for v, _ := range books {
-		fmt.Println(v)
+	for _, b := range books {
+		fmt.Println(b)
 	}
 }
 
@@ -106,8 +106,8 @@ func (l *Library) ShowClientBooks() {
 	if err != nil {
 		fmt.Println(err)
 	}
-	for v, _ := range books {
-		fmt.Println(v)
+	for _, b := range books {
+		fmt.Println(b)
 	}
 }
 
@@ -177,8 +177,8 @@ func (l *Library) Start() {
 				continue
 			}
 			users := l.usService.GetListOfUsers()
-			for v, _ := range users {
-				fmt.Println(v)
+			for _, u := range users {
+				fmt.Println(u)
 			}
 		case 0:
 			return

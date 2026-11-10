@@ -25,12 +25,8 @@ func NewLendingService(bookMem BookRepository, usMem UserRepository) *LendingSer
 	}
 }
 
-func (l *LendingService) GetLoan() []*Loan {
-	return l.loan
-}
-
 func (l *LendingService) GetBookToClient(clientId, id int) error {
-	if exist := l.userRepo.IsIDExist(id); !exist {
+	if !l.userRepo.IsIDExist(clientId) {
 		return errors_alias.ErrUserNotAuthorised
 	}
 

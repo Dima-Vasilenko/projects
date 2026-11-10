@@ -1,12 +1,10 @@
 package library
 
 import (
-	"errors"
 	"library/internal/errors_alias"
 	"library/internal/user"
 	"slices"
 	"strings"
-	"unicode"
 )
 
 type UserRepository interface {
@@ -28,9 +26,9 @@ func NewUserService(usMem UserRepository) *UserService {
 }
 
 func (u *UserService) RegisterUser(us string) (int, error) {
-	us = strings.TrimLeftFunc(us, unicode.IsSpace)
+	us = strings.TrimSpace(us)
 	if us == "" {
-		return -1, errors.New("incorrect input")
+		return -1, errors_alias.ErrIncorrectUserData
 	}
 
 	if exists := u.usRepo.IsExist(us); exists {
@@ -38,7 +36,9 @@ func (u *UserService) RegisterUser(us string) (int, error) {
 	}
 
 	uAdd := user.NewUser(us)
-	u.usRepo.AddUser(uAdd)
+	if err := u.usRepo.AddUser(uAdd); err != nil {
+		return -1, err
+	}
 	return uAdd.ID, nil
 }
 

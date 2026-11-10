@@ -3,6 +3,7 @@ package errors_alias
 import "errors"
 
 var (
+	ErrIncorrectUserData   = errors.New("incorrect data to create user")
 	ErrUserNotAuthorised   = errors.New("user not authorised")
 	ErrUncknownBook        = errors.New("unknown book")
 	ErrTookedBook          = errors.New("this book has been toked by another client")

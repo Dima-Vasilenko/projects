@@ -3,7 +3,6 @@ package library
 import (
 	"library/internal/book"
 	"library/internal/errors_alias"
-	"slices"
 )
 
 type BookRepository interface {
@@ -38,11 +37,10 @@ func (c *CatalogService) AddBookToCatalog(b *book.Book) (int, error) {
 }
 
 func (c *CatalogService) DeleteBookFromCatalog(id int) error {
-	if exist := slices.ContainsFunc(c.lendingServ.GetLoan(), func(l *Loan) bool {
-		return id == l.BookId
-	}); exist {
+	if c.lendingServ.IsLended(id) {
 		return errors_alias.ErrTookedBook
 	}
+
 	res := c.bookRepo.DeleteBookById(id)
 	return res
 }
