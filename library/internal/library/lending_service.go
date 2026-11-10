@@ -27,18 +27,18 @@ func NewLendingService(bookMem BookRepository, usMem UserRepository) *LendingSer
 
 func (l *LendingService) GetBookToClient(clientId, id int) error {
 	if !l.userRepo.IsIDExist(clientId) {
-		return errors_alias.ErrUserNotAuthorised
+		return errors_alias.ErrUserNotAuthorized
 	}
 
 	_, ok := l.bookRepo.GetBookById(id)
 	if ok != true {
-		return errors_alias.ErrUncknownBook
+		return errors_alias.ErrUnknownBook
 	}
 
 	if index := slices.IndexFunc(l.loan, func(l *Loan) bool {
 		return l.BookId == id
 	}); index != -1 {
-		return errors_alias.ErrTookedBook
+		return errors_alias.ErrBookAlreadyLoaned
 	}
 
 	l.loan = append(l.loan, &Loan{clientId, id})
@@ -46,13 +46,13 @@ func (l *LendingService) GetBookToClient(clientId, id int) error {
 }
 
 func (l *LendingService) ReturnBookFromClient(clientId, id int) error {
-	if clientId == -1 {
-		return errors_alias.ErrUserNotAuthorised
+	if !l.userRepo.IsIDExist(clientId) {
+		return errors_alias.ErrUserNotAuthorized
 	}
 
 	_, ok := l.bookRepo.GetBookById(id)
 	if ok != true {
-		return errors_alias.ErrUncknownBook
+		return errors_alias.ErrUnknownBook
 	}
 
 	index := slices.IndexFunc(l.loan, func(l *Loan) bool {
@@ -69,16 +69,24 @@ func (l *LendingService) ReturnBookFromClient(clientId, id int) error {
 	return nil
 }
 
-func (l *LendingService) GetClientsBooks(clientId int) ([]*book.Book, error) {
-	if clientId == -1 {
-		return nil, errors_alias.ErrUserNotAuthorised
+func (l *LendingService) GetClientsBooks(clientId int) ([]book.Book, error) {
+	if !l.userRepo.IsIDExist(clientId) {
+		return nil, errors_alias.ErrUserNotAuthorized
 	}
-	var res []*book.Book
+
+	var res []book.Book
 	for _, v := range l.loan {
 		if v.UserId == clientId {
-			b, _ := l.bookRepo.GetBookById(v.BookId)
+			b, ok := l.bookRepo.GetBookById(v.BookId)
+			if !ok {
+				return nil, errors_alias.ErrUnknownBook
+			}
 			res = append(res, b)
 		}
+	}
+
+	if len(res) == 0 {
+		return nil, errors_alias.ErrEmptyUserLibrary
 	}
 	return res, nil
 }

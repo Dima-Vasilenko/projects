@@ -9,7 +9,14 @@ import (
 
 func GetInt(mess string) (res int) {
 	fmt.Println(mess)
-	fmt.Scan(&res)
+	for {
+		_, err := fmt.Scan(&res)
+		if err != nil {
+			fmt.Println("Error, you need to enter decimal value, try one more: ")
+			continue
+		}
+		break
+	}
 	return
 }
 
@@ -43,10 +50,6 @@ func (l *Library) AddBook() {
 
 func (l *Library) DeleteBook() {
 	id := GetInt("Enter book's id, that you want to delete:")
-	if lended := l.lenService.IsLended(id); lended {
-		fmt.Println("you can't delte book from catalog while it lending for someone")
-		return
-	}
 	err := l.catService.DeleteBookFromCatalog(id)
 	if err != nil {
 		fmt.Println(err)

@@ -3,14 +3,13 @@ package library
 import (
 	"library/internal/errors_alias"
 	"library/internal/user"
-	"slices"
 	"strings"
 )
 
 type UserRepository interface {
 	AddUser(u *user.User) error
-	GetUserByUsername(us string) (*user.User, bool)
-	GetListOfUsers() []*user.User
+	GetUserByUsername(us string) (user.User, bool)
+	GetListOfUsers() []user.User
 	IsExist(us string) bool
 	IsIDExist(id int) bool
 }
@@ -43,15 +42,13 @@ func (u *UserService) RegisterUser(us string) (int, error) {
 }
 
 func (u *UserService) LogIn(us string) (int, error) {
-	index := slices.IndexFunc(u.usRepo.GetListOfUsers(), func(u *user.User) bool {
-		return u.Username == us
-	})
-	if index == -1 {
-		return -1, errors_alias.ErrUncknownUser
+	user, ok := u.usRepo.GetUserByUsername(us)
+	if !ok {
+		return -1, errors_alias.ErrUnknownUser
 	}
-	return u.usRepo.GetListOfUsers()[index].ID, nil
+	return user.ID, nil
 }
 
-func (u *UserService) GetListOfUsers() []*user.User {
+func (u *UserService) GetListOfUsers() []user.User {
 	return u.usRepo.GetListOfUsers()
 }

@@ -8,23 +8,27 @@ import (
 type BookRepository interface {
 	AddBook(b *book.Book) error
 	DeleteBookById(id int) error
-	GetBookById(id int) (*book.Book, bool)
-	GetListOfBooks() []*book.Book
+	GetBookById(id int) (book.Book, bool)
+	GetListOfBooks() []book.Book
+}
+
+type BookIsLended interface {
+	IsLended(id int) bool
 }
 
 type CatalogService struct {
-	bookRepo    BookRepository
-	lendingServ *LendingService
+	bookRepo       BookRepository
+	lendingChecker BookIsLended
 }
 
 func NewCatalogService(repo BookRepository, l *LendingService) *CatalogService {
 	return &CatalogService{
-		bookRepo:    repo,
-		lendingServ: l,
+		bookRepo:       repo,
+		lendingChecker: l,
 	}
 }
 
-func (c *CatalogService) GetBooks() []*book.Book {
+func (c *CatalogService) GetBooks() []book.Book {
 	return c.bookRepo.GetListOfBooks()
 }
 
@@ -37,8 +41,8 @@ func (c *CatalogService) AddBookToCatalog(b *book.Book) (int, error) {
 }
 
 func (c *CatalogService) DeleteBookFromCatalog(id int) error {
-	if c.lendingServ.IsLended(id) {
-		return errors_alias.ErrTookedBook
+	if c.lendingChecker.IsLended(id) {
+		return errors_alias.ErrBookAlreadyLoaned
 	}
 
 	res := c.bookRepo.DeleteBookById(id)
